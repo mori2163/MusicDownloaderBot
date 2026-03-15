@@ -30,6 +30,14 @@ class YouTubeDownloader(BaseDownloader):
         YouTubeから音声をダウンロードする
         """
         logger.info(f"YouTubeダウンロード開始: {url}")
+
+        existing_folders: set[Path] = set()
+        if self.download_path.exists():
+            existing_folders = {
+                folder.resolve()
+                for folder in self._safe_iterdir(self.download_path)
+                if folder.is_dir()
+            }
         
         # 出力テンプレート: アーティスト - タイトル/タイトル.拡張子
         # プレイリストの場合はプレイリスト名をフォルダ名に使用
@@ -80,7 +88,7 @@ class YouTubeDownloader(BaseDownloader):
         
         cmd.append(url)
         
-        logger.info(f"yt-dlpコマンド実行中...")
+        logger.info("yt-dlpコマンド実行中...")
         returncode, stdout, stderr = await self.run_command(cmd)
         logger.info(f"yt-dlp完了: returncode={returncode}")
         
@@ -95,7 +103,11 @@ class YouTubeDownloader(BaseDownloader):
         # ダウンロードされたフォルダを特定
         # yt-dlpの出力からファイルパスを抽出
         logger.info("ダウンロードフォルダ特定中...")
-        downloaded_folder = self._find_downloaded_folder(stdout)
+        combined_output = "\n".join(part for part in (stdout, stderr) if part)
+        downloaded_folder = self._find_downloaded_folder(
+            combined_output,
+            existing_folders=existing_folders,
+        )
         logger.info(f"特定されたフォルダ: {downloaded_folder}")
         
         if downloaded_folder and downloaded_folder.exists():
@@ -188,24 +200,43 @@ class YouTubeDownloader(BaseDownloader):
         except Exception as e:
             logger.exception(f"cover.jpg生成中にエラー: {e}")
     
-    def _find_downloaded_folder(self, output: str) -> Path | None:
+    def _find_downloaded_folder(
+        self,
+        output: str,
+        existing_folders: set[Path] | None = None,
+    ) -> Path | None:
         """yt-dlpの出力からダウンロードされたフォルダを特定"""
-        # [download] Destination: パス形式の行を探す
-        pattern = r"\[download\] Destination: (.+)"
+        # [download]/[ExtractAudio] Destination: パス形式の行を探す
+        pattern = r"\[(?:download|ExtractAudio)\] Destination: (.+)"
         matches = re.findall(pattern, output)
         
         if matches:
-            # 最初のファイルの親フォルダを返す
-            file_path = Path(matches[0])
-            logger.info(f"出力から検出したパス: {file_path}")
-            if file_path.parent.exists():
-                return file_path.parent
-        
-        # フォルダ名パターンで探す
-        logger.info(f"フォールバック: {self.download_path} 内のフォルダを検索")
-        for folder in self._safe_iterdir(self.download_path):
-            if folder.is_dir():
-                logger.info(f"フォルダ発見: {folder}")
-                return folder
+            for raw_path in matches:
+                file_path = Path(raw_path.strip().strip('"'))
+                folder = file_path.parent if file_path.suffix else file_path
+                logger.info(f"出力から検出したパス: {file_path}")
+                if folder.exists() and folder.is_dir():
+                    return folder
+
+        if existing_folders is not None:
+            current_folders = [
+                folder
+                for folder in self._safe_iterdir(self.download_path)
+                if folder.is_dir()
+            ]
+            new_folders = [
+                folder
+                for folder in current_folders
+                if folder.resolve() not in existing_folders
+            ]
+            if new_folders:
+                return max(new_folders, key=self._folder_mtime)
         
         return None
+
+    @staticmethod
+    def _folder_mtime(folder: Path) -> float:
+        try:
+            return folder.stat().st_mtime
+        except OSError:
+            return 0.0
