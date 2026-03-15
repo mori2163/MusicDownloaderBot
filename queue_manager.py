@@ -8,8 +8,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, auto
-from pathlib import Path
-from typing import Callable, Optional, Awaitable
+from typing import Awaitable, Callable, Optional
 
 from url_parser import ServiceType, URLParser
 from downloaders import (
@@ -40,7 +39,7 @@ class DownloadTask:
     channel_id: int
     status: TaskStatus = TaskStatus.PENDING
     result: Optional[DownloadResult] = None
-    created_at: datetime = None
+    created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     message_id: Optional[int] = None  # プレビューメッセージのID（更新用）
