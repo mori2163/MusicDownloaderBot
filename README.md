@@ -1,5 +1,8 @@
 # MusicDownloaderBot
 
+![DL_command](https://github.com/mori2163/MusicDownloaderBot/blob/main/docs/dl_command.png?raw=true)
+![Voice_Player](https://github.com/mori2163/MusicDownloaderBot/blob/main/docs/voice_player.png?raw=true)
+
 MusicDownloaderBot は、Discord のスラッシュコマンドで **Qobuz / YouTube / Spotify** の音楽を扱える、汎用的な **ダウンロード & 音楽配信 Bot** です。  
 ダウンロード、キュー管理、メタデータ取得、ファイル配布（直接添付 or ダウンロードリンク）、ボイス再生までを1つの Bot でまとめて運用できます。
 
