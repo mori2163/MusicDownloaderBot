@@ -35,6 +35,9 @@ class Config:
     # YouTube設定
     YOUTUBE_FORMAT: str = "opus"  # opus固定
     YOUTUBE_PO_TOKEN: Optional[str] = os.getenv("YOUTUBE_PO_TOKEN")
+    VOICE_TARGET_BITRATE_KBPS: int = int(os.getenv("VOICE_TARGET_BITRATE_KBPS", "128"))
+    VOICE_STREAM_CACHE_SECONDS: int = int(os.getenv("VOICE_STREAM_CACHE_SECONDS", "180"))
+    VOICE_SEARCH_RESULT_LIMIT: int = int(os.getenv("VOICE_SEARCH_RESULT_LIMIT", "5"))
     
     # 音声形式設定
     SPOTIFY_FORMAT: str = "opus"  # opus固定

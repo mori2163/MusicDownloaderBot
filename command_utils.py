@@ -21,16 +21,20 @@ def resolve_command(cmd: list[str]) -> tuple[Optional[list[str]], Optional[str]]
         return None, "コマンドが空です"
 
     executable = cmd[0]
-    resolved_cmd = cmd
-
-    if shutil.which(executable) is None:
-        module_name = _PYTHON_COMMAND_MAP.get(executable)
-        if module_name:
-            if importlib.util.find_spec(module_name) is None:
-                return None, _missing_command_message(executable)
+    module_name = _PYTHON_COMMAND_MAP.get(executable)
+    if module_name:
+        # PATH上の実行ファイルよりも、現在のPython環境のモジュール実行を優先する
+        # （環境差分で古いyt-dlp/spotdlが呼ばれる事故を防ぐため）
+        if importlib.util.find_spec(module_name) is not None:
             resolved_cmd = [sys.executable, "-m", module_name] + cmd[1:]
+        elif shutil.which(executable) is not None:
+            resolved_cmd = cmd
         else:
             return None, _missing_command_message(executable)
+    else:
+        if shutil.which(executable) is None:
+            return None, _missing_command_message(executable)
+        resolved_cmd = cmd
 
     node_error = _validate_js_runtime(resolved_cmd)
     if node_error:
