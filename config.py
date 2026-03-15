@@ -73,7 +73,9 @@ class Config:
         if not cls.DISCORD_TOKEN:
             errors.append("DISCORD_TOKENが設定されていない")
         
-        if not cls.QOBUZ_EMAIL or not cls.QOBUZ_PASSWORD:
+        cls.QOBUZ_EMAIL = cls.QOBUZ_EMAIL.strip()
+        cls.QOBUZ_PASSWORD = cls.QOBUZ_PASSWORD.strip()
+        if bool(cls.QOBUZ_EMAIL) != bool(cls.QOBUZ_PASSWORD):
             errors.append("Qobuz認証情報が不完全（QOBUZ_EMAIL, QOBUZ_PASSWORD）")
         
         return errors
